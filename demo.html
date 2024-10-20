@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rule Engine with AST</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #e9ecef;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            width: 60%;
+            max-width: 800px;
+            margin: 20px;
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            transition: box-shadow 0.3s;
+        }
+        .container:hover {
+            box-shadow: 0 6px 30px rgba(0, 0, 0, 0.2);
+        }
+        h1 {
+            text-align: center;
+            color: #343a40;
+            margin-bottom: 20px;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        label {
+            font-weight: bold;
+            color: #495057;
+        }
+        input[type="text"], textarea {
+            padding: 12px;
+            width: 100%;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        input[type="text"]:focus, textarea:focus {
+            border-color: #28a745;
+            outline: none;
+        }
+        button {
+            padding: 12px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+        button:hover {
+            background-color: #218838;
+            transform: translateY(-2px);
+        }
+        .output {
+            margin-top: 30px;
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #ced4da;
+        }
+        .output h3 {
+            margin: 0;
+            color: #495057;
+        }
+        .output p {
+            margin: 5px 0 0 0;
+            color: #495057;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Rule Engine with AST</h1>
+    
+    <!-- Form to create a rule -->
+    <form id="rule-form">
+        <label for="rule-input">Enter Rule:</label>
+        <textarea id="rule-input" rows="4" placeholder="e.g. (age > 30 AND department = 'Sales') OR (salary > 50000)"></textarea>
+        
+        <label for="data-input">Enter Data (JSON format):</label>
+        <textarea id="data-input" rows="4" placeholder='{"age": 35, "department": "Sales", "salary": 60000, "experience": 3}'></textarea>
+
+        <button type="button" onclick="createRule()">Create Rule</button>
+        <button type="button" onclick="evaluateRule()">Evaluate Rule</button>
+        <button type="button" onclick="modifyExistingRule()">Modify Rule</button>
+    </form>
+    
+    <!-- Output Area -->
+    <div class="output" id="output">
+        <h3>Output:</h3>
+        <p id="rule-output"></p>
+        <p id="evaluation-output"></p>
+    </div>
+</div>
+
+<script>
+// Placeholder for backend rule evaluation (to be connected with backend logic)
+let ast = null;
+
+// Valid attributes for data
+const validAttributes = ["age", "department", "salary", "experience"];
+
+// Function to create rule from input string
+function createRule() {
+    const ruleInput = document.getElementById('rule-input').value;
+    if (!ruleInput) {
+        alert("Please enter a rule.");
+        return;
+    }
+
+    try {
+        ast = parseRule(ruleInput);  // Parses the rule string into AST
+        document.getElementById('rule-output').innerText = "Created AST: " + JSON.stringify(ast);
+    } catch (error) {
+        alert("Error creating AST: " + error.message);
+    }
+}
+
+// Function to evaluate rule with provided JSON data
+function evaluateRule() {
+    if (!ast) {
+        alert("Please create a rule first.");
+        return;
+    }
+
+    const dataInput = document.getElementById('data-input').value;
+    if (!dataInput) {
+        alert("Please enter data in JSON format.");
+        return;
+    }
+
+    let data;
+    try {
+        data = JSON.parse(dataInput);
+        validateData(data);  // Validate the data against valid attributes
+    } catch (error) {
+        alert("Invalid JSON data or structure: " + error.message);
+        return;
+    }
+
+    try {
+        const result = evaluateAST(ast, data);  // Evaluate the rule using the provided data
+        document.getElementById('evaluation-output').innerText = "Evaluation Result: " + result;
+    } catch (error) {
+        alert("Error evaluating rule: " + error.message);
+    }
+}
+
+// Validate data against allowed attributes
+function validateData(data) {
+    for (const key in data) {
+        if (!validAttributes.includes(key)) {
+            throw new Error(`Invalid attribute '${key}' in data. Allowed attributes are: ${validAttributes.join(", ")}`);
+        }
+    }
+}
+
+// Parse rule string into AST
+function parseRule(rule) {
+    // Tokenizing and parsing logic to create AST
+    const tokens = rule.match(/\w+|[><=!]+|[()]/g);
+    if (!tokens) {
+        throw new Error("Invalid rule format. Please check for missing operators or parentheses.");
+    }
+
+    let index = 0;
+
+    function parseExpression() {
+        let node = parseTerm();
+        while (index < tokens.length && (tokens[index] === "AND" || tokens[index] === "OR")) {
+            const operator = tokens[index++];
+            const rightNode = parseTerm();
+            node = { type: "operator", operator, left: node, right: rightNode };
+        }
+        return node;
+    }
+
+    function parseTerm() {
+        if (tokens[index] === "(") {
+            index++;
+            const node = parseExpression();
+            if (tokens[index] !== ")") {
+                throw new Error("Missing closing parenthesis.");
+            }
+            index++;  // Skips ")"
+            return node;
+        }
+        const leftOperand = tokens[index++];
+        const operator = tokens[index++];
+        const rightOperand = tokens[index++];
+
+        if (!leftOperand || !operator || !rightOperand) {
+            throw new Error("Invalid term structure. Check for missing operands or operators.");
+        }
+
+        return { type: "operand", condition: `${leftOperand} ${operator} ${rightOperand}` };
+    }
+
+    const ast = parseExpression();
+    return ast;
+}
+
+// Evaluate AST against data
+function evaluateAST(ast, data) {
+    if (ast.type === "operand") {
+        const [left, operator, right] = ast.condition.split(" ");
+        const leftValue = data[left];
+        const rightValue = isNaN(right) ? right.replace(/['"]/g, "") : Number(right);
+
+        switch (operator) {
+            case '>':
+                return leftValue > rightValue;
+            case '<':
+                return leftValue < rightValue;
+            case '=':
+                return leftValue == rightValue;
+            default:
+                throw new Error(`Unknown operator ${operator}`);
+        }
+    }
+
+    const leftEval = evaluateAST(ast.left, data);
+    const rightEval = evaluateAST(ast.right, data);
+
+    if (ast.operator === "AND") {
+        return leftEval && rightEval;
+    } else if (ast.operator === "OR") {
+        return leftEval || rightEval;
+    }
+}
+
+// Modify existing rule in the AST
+function modifyExistingRule() {
+    const newCondition = prompt("Enter new condition:");
+    const oldCondition = prompt("Enter condition to replace:");
+    
+    if (ast) {
+        modifyRule(ast, newCondition, oldCondition);
+        document.getElementById('rule-output').innerText = "Modified AST: " + JSON.stringify(ast);
+    } else {
+        alert("No existing rule to modify. Please create a rule first.");
+    }
+}
+
+// Modify rule function
+function modifyRule(ast, newCondition, replaceCondition) {
+    if (ast.type === "operand" && ast.condition === replaceCondition) {
+        ast.condition = newCondition;
+    } else {
+        if (ast.left) modifyRule(ast.left, newCondition, replaceCondition);
+        if (ast.right) modifyRule(ast.right, newCondition, replaceCondition);
+    }
+}
+
+// Example of rule modification (bonus point)
+function extendRuleWithFunction() {
+    // Placeholder for future implementation of user-defined functions
+}
+
+</script>
+
+</body>
+</html>

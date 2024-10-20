@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rule Engine with AST</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #e9ecef;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            width: 60%;
+            max-width: 800px;
+            margin: 20px;
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            transition: box-shadow 0.3s;
+        }
+        .container:hover {
+            box-shadow: 0 6px 30px rgba(0, 0, 0, 0.2);
+        }
+        h1 {
+            text-align: center;
+            color: #343a40;
+            margin-bottom: 20px;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        label {
+            font-weight: bold;
+            color: #495057;
+        }
+        input[type="text"], textarea {
+            padding: 12px;
+            width: 100%;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        input[type="text"]:focus, textarea:focus {
+            border-color: #28a745;
+            outline: none;
+        }
+        button {
+            padding: 12px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+        button:hover {
+            background-color: #218838;
+            transform: translateY(-2px);
+        }
+        .output {
+            margin-top: 30px;
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #ced4da;
+        }
+        .output h3 {
+            margin: 0;
+            color: #495057;
+        }
+        .output p {
+            margin: 5px 0 0 0;
+            color: #495057;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Rule Engine with AST</h1>
+    
+    <!-- Form to create a rule -->
+    <form method="POST" action="rule_engine.php">
+        <label for="rule-input">Enter Rule:</label>
+        <textarea id="rule-input" name="rule" rows="4" placeholder="e.g. (age > 30 AND department = 'Sales') OR (salary > 50000)"></textarea>
+        
+        <label for="data-input">Enter Data (JSON format):</label>
+        <textarea id="data-input" name="data" rows="4" placeholder='{"age": 35, "department": "Sales", "salary": 60000, "experience": 3}'></textarea>
+
+        <button type="submit" name="action" value="create">Create Rule</button>
+        <button type="submit" name="action" value="evaluate">Evaluate Rule</button>
+        <button type="submit" name="action" value="modify">Modify Rule</button>
+    </form>
+    
+    <!-- Output Area -->
+    <div class="output" id="output">
+        <h3>Output:</h3>
+        <p id="rule-output">
+            <?php
+            if (isset($_GET['rule_output'])) {
+                echo htmlspecialchars($_GET['rule_output']);
+            }
+            ?>
+        </p>
+        <p id="evaluation-output">
+            <?php
+            if (isset($_GET['evaluation_output'])) {
+                echo htmlspecialchars($_GET['evaluation_output']);
+            }
+            ?>
+        </p>
+    </div>
+</div>
+
+</body>
+</html>
